@@ -1,17 +1,16 @@
- medications = JSON.parse(localStorage.getItem('medications')) || [];
+let medications = JSON.parse(localStorage.getItem('medications')) || [];
+const medicationSelectTemplate = document.querySelector('.medication-select');
+const addSaleItemButton = document.getElementById('add-sale-item');
+const salesItemsContainer = document.getElementById('sales-items');
+const totalDisplay = document.getElementById('sales-total');
+const salesForm = document.getElementById('sales-form');
 
- medicationSelectTemplate = document.querySelector('.medication-select');
- addSaleItemButton = document.getElementById('add-sale-item');
- salesItemsContainer = document.getElementById('sales-items');
- totalDisplay = document.getElementById('sales-total');
- salesForm = document.getElementById('sales-form');
- refreshButton = document.getElementById('refresh-button');
-
- populateMedicationSelect = (selectElement) => {
+const populateMedicationSelect = (selectElement) => {
   let fragment = document.createDocumentFragment();
   medications.forEach((med, index) => {
     const expirationDate = new Date(med.expirationDate);
     const currentDate = new Date();
+    
     if (expirationDate > currentDate) {
       const option = document.createElement('option');
       option.value = index;
@@ -23,7 +22,8 @@
   selectElement.appendChild(fragment);
 };
 
- addSaleItem = () => {
+
+const addSaleItem = () => {
   const saleItem = document.createElement('div');
   saleItem.classList.add('sales-item');
   saleItem.innerHTML = `
@@ -39,47 +39,42 @@
   populateMedicationSelect(newSelectElement);
 };
 
- calculateTotal = () => {
+const updateStockAfterSale = (medicationIndex, quantitySold) => {
+  medications[medicationIndex].quantity -= quantitySold;
+  if (medications[medicationIndex].quantity < 0) {
+    medications[medicationIndex].quantity = 0;
+  }
+  localStorage.setItem('medications', JSON.stringify(medications));
+};
+
+const calculateTotal = () => {
   let total = 0;
   const saleItems = salesItemsContainer.querySelectorAll('.sales-item');
-
+  
   saleItems.forEach(item => {
     const medicationIndex = item.querySelector('.medication-select').value;
-    const quantity = parseInt(item.querySelector('.sale-quantity').value, 10) || 0;
+    const quantity = parseInt(item.querySelector('.sale-quantity').value, 10);
     const stockWarning = item.querySelector('.stock-warning');
 
     if (medicationIndex && quantity > 0) {
-      const medication = medications[medicationIndex];
-      const price = medication.price;
+      const price = medications[medicationIndex].price;
       total += price * quantity;
 
-      if (quantity > medication.quantity) {
+      if (quantity > medications[medicationIndex].quantity) {
         stockWarning.style.display = 'block';
       } else {
         stockWarning.style.display = 'none';
       }
     }
   });
-
+  
   totalDisplay.textContent = `Total : ${total} GDES`;
 };
 
- removeSaleItem = (item) => {
+const removeSaleItem = (item) => {
   item.remove();
   calculateTotal();
 };
-
-const addSaleToHistory = (itemsSold) => {
-  const salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || []
-
-  const updatedSalesHistory = [...salesHistory, ...itemsSold]
-  localStorage.setItem('salesHistory', JSON.stringify(updatedSalesHistory));
-}
-
-const updateData = (itemsSold) => {
-  addSaleToHistory(itemsSold)
-  localStorage.setItem('medications', JSON.stringify(medications));
-}
 
 salesForm.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -89,45 +84,29 @@ salesForm.addEventListener('submit', (event) => {
   const buyerEmail = document.getElementById('buyer-email').value;
   const saleItems = salesItemsContainer.querySelectorAll('.sales-item');
   const itemsSold = [];
-  let isFormValid = true;
 
   saleItems.forEach(item => {
     const medicationIndex = item.querySelector('.medication-select').value;
-    const quantity = parseInt(item.querySelector('.sale-quantity').value, 10) || 0;
-
+    const quantity = parseInt(item.querySelector('.sale-quantity').value, 10);
     if (medicationIndex && quantity > 0) {
-      const medication = medications[medicationIndex];
-      if (quantity > medication.quantity) {
-        isFormValid = false;
-      } else {
-        itemsSold.push({
-          medication: medication.name,
-          quantity,
-          price: Number(medication.price),
-          date: window.dateFns.format(new Date(), 'dd-MM-yyyy'),
-          clientName: buyerName,
-          category: medication.category
-        });
-        medication.quantity -= quantity;
-      }
+      itemsSold.push({
+        name: medications[medicationIndex].name,
+        quantity,
+        price: medications[medicationIndex].price
+      });
+      updateStockAfterSale(medicationIndex, quantity);
     }
   });
 
-  if (!isFormValid) {
-    alert('Quantité insuffisante pour l’un des articles sélectionnés.');
-    return;
-  }
-
-  updateData(itemsSold)
   printReceipt(buyerName, buyerPhone, buyerEmail, itemsSold);
+
   salesForm.reset();
   salesItemsContainer.innerHTML = '';
   calculateTotal();
 });
-
 const printReceipt = (buyerName, buyerPhone, buyerEmail, itemsSold) => {
   const receiptContent = `
-<div style="font-family: 'Arial', sans-serif; font-size: 12px; line-height: 1.4; width: 100%; max-width: 90mm; margin: 0 auto; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #f7f7f7; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
+<div style="font-family: 'Arial', sans-serif; font-size: 10px; line-height: 1.4; width: 100%; max-width: 228px; margin: 0 auto; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #f7f7f7; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);">
   <div style="text-align: center; margin-bottom: 15px;">
     <h2 style="margin: 0; color: #2c3e50; font-size: 14px; font-weight: bold;">CENTRE HOSPITALIER NOTRE DAME DE LA MERCI S.A - Pharma</h2>
     <p style="font-size: 10px; color: #7f8c8d; margin: 3px 0;">Adresse : 5, Rue Rivière en face du Rectorat de l'UEH</p>
@@ -169,11 +148,12 @@ const printReceipt = (buyerName, buyerPhone, buyerEmail, itemsSold) => {
 </div>
   `;
 
-  const printWindow = window.open('', '', 'height=600,width=300');  
+  const printWindow = window.open('', '', 'height=600,width=250');  
   printWindow.document.write(receiptContent);
   printWindow.document.close();
   printWindow.print();
-};
+}
+
 
 addSaleItemButton.addEventListener('click', addSaleItem);
 
@@ -185,7 +165,12 @@ salesItemsContainer.addEventListener('click', (event) => {
   }
 });
 
-refreshButton.addEventListener('click', () => location.reload());
-
 populateMedicationSelect(document.querySelector('.medication-select'));
+
 calculateTotal();
+
+        const refreshButton = document.getElementById('refresh-button');
+
+        refreshButton.addEventListener('click', () => {
+            location.reload(); 
+        });
