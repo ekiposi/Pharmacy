@@ -1,0 +1,15 @@
+{
+  "name": "Système de Gestion des Médicaments CHNDLM S.A - Pharma",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["gestion", "médicaments", "pharma", "CHNDLM S.A"],
+  "author": "Développé par NexGen Spark pour CHNDLM S.A - Pharma",
+  "license": "ISC",
+  "description": "Système de gestion des médicaments développé par NexGen Spark pour CHNDLM S.A - Pharma.",
+  "devDependencies": {
+    "electron": "^33.2.0"
+  }
+}
