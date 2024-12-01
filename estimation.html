@@ -229,8 +229,22 @@ tr:nth-child(even) {
             const generatePDF = () => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-                doc.setFontSize(18);
-                doc.text('Estimation des Stocks', 14, 22);
+
+                doc.setFontSize(16);
+                doc.text('CENTRE HOSPITALIER NOTRE DAME DE LA MERCI S.A - Pharma', 105, 20, null, null, 'center');
+                doc.setFontSize(10);
+                doc.text('Adresse : 5, Rue Rivière en face du Rectorat de l\'UEH', 105, 30, null, null, 'center');
+                doc.text('Email: pharmachndlm@gmail.com', 105, 35, null, null, 'center');
+                doc.text('Téléphone: +509 2910-3131', 105, 40, null, null, 'center');
+
+                doc.setLineWidth(0.5);
+                doc.line(10, 45, 200, 45);
+
+                doc.setFontSize(12);
+                doc.text('Estimation Totale des Stocks', 105, 55, null, null, 'center');
+                doc.setFontSize(10);
+                doc.text(`Date: ${new Date().toLocaleString()}`, 105, 65, null, null, 'center');
+
                 const medications = loadMedications();
                 const tableColumn = ["Nom", "Quantité", "Prix Unitaire", "Valeur Stock"];
                 const tableRows = medications.map(med => [
@@ -242,13 +256,14 @@ tr:nth-child(even) {
                 doc.autoTable({
                     head: [tableColumn],
                     body: tableRows,
-                    startY: 30,
+                    startY: 60,
                     theme: 'striped'
                 });
                 const totalValue = medications.reduce((sum, med) => sum + (med.quantity * parseFloat(med.price)), 0);
                 doc.text(`Total des Valeurs en Stock: ${formatCurrency(totalValue)}`, 14, doc.autoTable.previous.finalY + 10);
                 doc.save('estimation_stocks.pdf');
             };
+
             searchBar.addEventListener('input', filterMedications);
             categoryFilter.addEventListener('change', filterMedications);
             pdfDownloadBtn.addEventListener('click', generatePDF);
