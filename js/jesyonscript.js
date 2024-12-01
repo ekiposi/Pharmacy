@@ -69,6 +69,18 @@
   calculateTotal();
 };
 
+const addSaleToHistory = (itemsSold) => {
+  const salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || []
+
+  const updatedSalesHistory = [...salesHistory, ...itemsSold]
+  localStorage.setItem('salesHistory', JSON.stringify(updatedSalesHistory));
+}
+
+const updateData = (itemsSold) => {
+  addSaleToHistory(itemsSold)
+  localStorage.setItem('medications', JSON.stringify(medications));
+}
+
 salesForm.addEventListener('submit', (event) => {
   event.preventDefault();
 
@@ -89,9 +101,11 @@ salesForm.addEventListener('submit', (event) => {
         isFormValid = false;
       } else {
         itemsSold.push({
-          name: medication.name,
+          medication: medication.name,
           quantity,
-          price: medication.price
+          price: medication.price,
+          date: new Date(),
+          clientName: buyerName
         });
         medication.quantity -= quantity;
       }
@@ -103,7 +117,7 @@ salesForm.addEventListener('submit', (event) => {
     return;
   }
 
-  localStorage.setItem('medications', JSON.stringify(medications));
+  updateData(itemsSold)
   printReceipt(buyerName, buyerPhone, buyerEmail, itemsSold);
   salesForm.reset();
   salesItemsContainer.innerHTML = '';
