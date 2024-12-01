@@ -103,9 +103,10 @@ salesForm.addEventListener('submit', (event) => {
         itemsSold.push({
           medication: medication.name,
           quantity,
-          price: medication.price,
-          date: new Date(),
-          clientName: buyerName
+          price: Number(medication.price),
+          date: window.dateFns.format(new Date(), 'dd-MM-yyyy'),
+          clientName: buyerName,
+          category: medication.category
         });
         medication.quantity -= quantity;
       }
