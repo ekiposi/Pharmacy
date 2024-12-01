@@ -14,11 +14,13 @@
     <header>
         <h1>Médicaments Périmés - CHNDLM S.A - Pharma</h1>
         <div class="header-buttons">
-            <a href="dashboard.html" id="sales-button" class="header-btn">Tableau de Bord</a>
+            <a href="dashboard.html" id="sales-button" class="header-btn"> Tableau de bord</a>
             <a href="jesyon.html" id="sales-button" class="header-btn">Gestion des Ventes</a>
             <a href="estimation.html" id="sales-button" class="header-btn">Estimation totale des stocks</a>
+            <a href="perime.html" id="sales-button" class="header-btn">Médicaments Périmés</a>
             <a href="notif.html" id="sales-button" class="header-btn">Quantités insuffisantes</a>
             <a href="report.html" id="sales-button" class="header-btn">Rapports de ventes</a>
+            <a href="sales.html" id="sales-button" class="header-btn">Ventes</a>
             <a href="index.html" id="logout-button" class="logout-btn">Déconnexion</a>
         </div>
     </header>  
@@ -81,18 +83,17 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             doc.setFontSize(16);
-            doc.text('CENTRE HOSPITALIER NOTRE DAME DE LA MERCI S.A - Pharma', 105, 20, null, null, 'center');
+            doc.text('CENTRE HOSPITALIER NOTRE DAME DE LA MERCI S.A - Pharma', 105, 20, { align: 'center' });
             doc.setFontSize(10);
-            doc.text('Adresse : 5, Rue Rivière en face du Rectorat de l\'UEH', 105, 30, null, null, 'center');
-            doc.text('Email: pharmachndlm@gmail.com', 105, 35, null, null, 'center');
-            doc.text('Téléphone: +509 2910-3131', 105, 40, null, null, 'center');
+            doc.text('Adresse : 5, Rue Rivière en face du Rectorat de l\'UEH', 105, 30, { align: 'center' });
+            doc.text('Email: pharmachndlm@gmail.com', 105, 35, { align: 'center' });
+            doc.text('Téléphone: +509 2910-3131', 105, 40, { align: 'center' });
             doc.setLineWidth(0.5);
             doc.line(10, 45, 200, 45);
             doc.setFontSize(12);
-            doc.text('Médicaments Périmés', 105, 55, null, null, 'center');
+            doc.text('Médicaments Périmés', 105, 55, { align: 'center' });
             doc.setFontSize(10);
-            doc.text(`Date: ${new Date().toLocaleString()}`, 105, 65, null, null, 'center');
-            doc.text('', 105, 75);
+            doc.text(`Date: ${new Date().toLocaleString()}`, 105, 65, { align: 'center' });
             const headers = ["Nom", "Quantité", "Prix", "Date d'Expiration", "Catégorie"];
             const colWidths = [50, 30, 30, 40, 40];
             let y = 80;
@@ -100,7 +101,7 @@
             doc.setTextColor(0, 0, 0);
             headers.forEach((header, index) => {
                 doc.setFillColor(200, 200, 200);
-                doc.rect(14 + (index * 40), y - 5, colWidths[index], 10, 'F');
+                doc.rect(14 + (index * 40), y - 5, colWidths[index], 10, 'FD');
                 doc.text(header, 14 + (index * 40) + 5, y);
             });
             y += 10;
@@ -112,7 +113,7 @@
                 const rowData = [med.name, med.quantity.toString(), med.price, med.expirationDate, med.category];
                 rowData.forEach((data, index) => {
                     doc.setFillColor(245, 245, 245);
-                    doc.rect(14 + (index * 40), y, colWidths[index], 10, 'F');
+                    doc.rect(14 + (index * 40), y, colWidths[index], 10, 'FD');
                     doc.setTextColor(0, 0, 0);
                     doc.text(data, 14 + (index * 40) + 5, y + 6);
                 });

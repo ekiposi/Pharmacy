@@ -11,6 +11,12 @@ window.addEventListener('load', () => {
 
 let tentatives = 0;
 
+const users = [
+    { username: 'anya', password: 'anya', redirectUrl: 'dashboard.html' },
+    { username: 'meow', password: 'meow', redirectUrl: 'dashboard.html' },
+    { username: 'osi', password: 'osi', redirectUrl: 'dashboard.html' } 
+];
+
 const form = document.getElementById('loginForm');
 form.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -31,15 +37,12 @@ function sanitizeInput(input) {
 }
 
 function validateCredentials(username, password) {
-    if (username === 'DrErla24' && password === 'Bellevue@123') {
+    const user = users.find(user => user.username === username && user.password === password);
+
+    if (user) {
         showMessage('Connexion réussie!', 'success');
         setTimeout(() => {
-            window.location.href = 'dashboard.html';
-        }, 1000);
-    } else if (username === '1234' && password === 'master') {
-        showMessage('Connexion réussie!', 'success');
-        setTimeout(() => {
-            window.location.href = 'caissier/jesyon.html';
+            window.location.href = user.redirectUrl;
         }, 1000);
     } else {
         tentatives++;

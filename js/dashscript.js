@@ -1,177 +1,212 @@
-let medications = JSON.parse(localStorage.getItem('medications')) || [];
-let editingIndex = -1;
 
-const medicationForm = document.getElementById("add-medication-form");
-const medicationTable = document.querySelector("#medication-table tbody");
-const medicationListContainer = document.getElementById('medication-list');
-const totalStockValueCell = document.getElementById('total-stock-value');
-const footerRow = document.getElementById('footer-row');
-const searchBar = document.getElementById("search-bar");
-const categoryFilter = document.getElementById("category-filter");
-const expiredFilter = document.getElementById("expired-filter");
-const lowStockFilter = document.getElementById("low-stock-filter");
+document.addEventListener('DOMContentLoaded', () => {
+    let medications = [];
+    let editingIndex = -1;
 
-const formatCurrency = (value) => {
-    return value.toLocaleString('fr-FR') + ' GDES';
-};
+    const elements = {
+        medicationForm: document.getElementById("add-medication-form"),
+        medicationTable: document.querySelector("#medication-table tbody"),
+        medicationListContainer: document.getElementById('medication-list'),
+        totalStockValueCell: document.getElementById('total-stock-value'),
+        searchBar: document.getElementById("search-bar"),
+        categoryFilter: document.getElementById("category-filter"),
+        expiredFilter: document.getElementById("expired-filter"),
+        lowStockFilter: document.getElementById("low-stock-filter"),
+        addMedicationBtn: document.getElementById("add-medication"),
+        medicationFormContainer: document.getElementById("medication-form")
+    };
 
-const showMedicationForm = (index = -1) => {
-    const formTitle = document.getElementById("form-title");
-    if (index === -1) {
-        formTitle.innerText = "Ajouter Médicament";
-        medicationForm.reset();
-        editingIndex = -1;
-    } else {
-        formTitle.innerText = "Modifier Médicament";
-        const medication = medications[index];
-        document.getElementById("med-name").value = medication.name;
-        document.getElementById("med-quantity").value = medication.quantity;
-        document.getElementById("med-price").value = medication.price;
-        document.getElementById("med-expiration").value = medication.expirationDate;
-        document.getElementById("med-category").value = medication.category;
-        editingIndex = index;
-    }
-    document.getElementById("medication-form").classList.toggle("hidden");
-};
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'HTG' 
+        }).format(value);
+    };
 
-const addMedication = (medication) => {
-    // Vérification si le médicament existe déjà
-    if (medications.some((med, index) =>
-        med.name.toLowerCase() === medication.name.toLowerCase() && index !== editingIndex)) {
-        alert("Ce Médicament existe déjà.");
-        return;
-    }
+    const isDateExpired = (expirationDate) => {
+        const expDate = new Date(expirationDate);
+        const currentDate = new Date();
+        return expDate <= currentDate;
+    };
 
-    // Vérification de la catégorie obligatoire
-    if (!medication.category) {
-        alert("La catégorie des médicaments est obligatoire.");
-        return;
-    }
+    const loadMedications = () => {
+        try {
+            const storedMedications = localStorage.getItem('medications');
+            medications = storedMedications 
+                ? JSON.parse(storedMedications).map(med => ({
+                    ...med,
+                    isExpired: isDateExpired(med.expirationDate),
+                    isLowStock: parseInt(med.quantity) < 10
+                }))
+                : [];
+        } catch (error) {
+            console.error('Error loading medications:', error);
+            medications = [];
+        }
+    };
 
-    const expirationDate = new Date(medication.expirationDate);
-    const currentDate = new Date();
-    medication.isExpired = expirationDate <= currentDate;
-    medication.isLowStock = parseInt(medication.quantity) < 8;
+    const saveMedications = () => {
+        localStorage.setItem('medications', JSON.stringify(medications));
+    };
 
-    // Ajouter ou modifier le médicament
-    if (editingIndex === -1) {
-        medications.push(medication);
-    } else {
-        medications[editingIndex] = medication;
-        editingIndex = -1;
-    }
+    const showMedicationForm = (index = -1) => {
+        const formTitle = document.getElementById("form-title");
+        
+        if (index === -1) {
+            formTitle.innerText = "Ajouter Médicament";
+            elements.medicationForm.reset();
+            editingIndex = -1;
+        } else {
+            formTitle.innerText = "Modifier Médicament";
+            const medication = medications[index];
+            
+            ['med-name', 'med-quantity', 'med-price', 'med-expiration', 'med-category']
+                .forEach(id => {
+                    const field = document.getElementById(id);
+                    field.value = medication[field.name.replace('med-', '')];
+                });
+            
+            editingIndex = index;
+        }
+        
+        elements.medicationFormContainer.classList.toggle("hidden");
+    };
 
-    // Sauvegarde des médicaments dans localStorage
-    localStorage.setItem("medications", JSON.stringify(medications));
+    const addMedication = (medication) => {
+        // Validation
+        if (medications.some((med, index) => 
+            med.name.toLowerCase() === medication.name.toLowerCase() && 
+            index !== editingIndex
+        )) {
+            alert("Ce Médicament existe déjà.");
+            return;
+        }
 
-    // Rafraîchissement des affichages
-    renderFilteredTable();
-    generateMedicationReport();
-    document.getElementById("medication-form").classList.add("hidden"); // Masque le formulaire après ajout ou modification
-};
+        const preparedMedication = {
+            ...medication,
+            isExpired: isDateExpired(medication.expirationDate),
+            isLowStock: parseInt(medication.quantity) < 10
+        };
 
-const deleteMedication = (index) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce médicament ?")) {
-        medications.splice(index, 1);
-        localStorage.setItem("medications", JSON.stringify(medications));
+        if (editingIndex === -1) {
+            medications.push(preparedMedication);
+        } else {
+            medications[editingIndex] = preparedMedication;
+            editingIndex = -1;
+        }
+
+        saveMedications();
         renderFilteredTable();
         generateMedicationReport();
-    }
-};
+        elements.medicationFormContainer.classList.add("hidden");
+    };
 
-const renderFilteredTable = () => {
-    const searchValue = searchBar.value.toLowerCase();
-    const filterCategory = categoryFilter.value;
-    const showExpired = expiredFilter.checked;
-    const showLowStock = lowStockFilter.checked;
+    const renderFilteredTable = () => {
+        const searchValue = elements.searchBar.value.toLowerCase();
+        const filterCategory = elements.categoryFilter.value;
+        const showExpired = elements.expiredFilter.checked;
+        const showLowStock = elements.lowStockFilter.checked;
 
-    const filteredMedications = medications.filter(med =>
-        med.name.toLowerCase().includes(searchValue) &&
-        (!filterCategory || med.category === filterCategory) &&
-        (!showExpired || med.isExpired) &&
-        (!showLowStock || med.isLowStock)
-    );
+        const filteredMedications = medications.filter(med => 
+            med.name.toLowerCase().includes(searchValue) &&
+            (!filterCategory || med.category === filterCategory) &&
+            (!showExpired || med.isExpired) &&
+            (!showLowStock || med.isLowStock)
+        );
 
-    medicationTable.innerHTML = "";
-    filteredMedications.forEach((med, index) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${med.name}</td>
-            <td>${med.quantity}</td>
-            <td>${formatCurrency(med.price)}</td>
-            <td>${med.expirationDate}</td>
-            <td>${med.category}</td>
-            <td>${med.isExpired ? 'Oui' : 'Non'}</td>
-            <td>${med.isLowStock ? 'Oui' : 'Non'}</td>
-            <td>
-                ${med.isExpired ? '' : `<button onclick="showMedicationForm(${index})">Modifier</button>`}
-                <button onclick="deleteMedication(${index})">Supprimer</button>
-            </td>
-        `;
-        medicationTable.appendChild(row);
-    });
-};
+        elements.medicationTable.innerHTML = filteredMedications.map((med, index) => `
+            <tr>
+                <td>${med.name}</td>
+                <td>${med.quantity}</td>
+                <td>${formatCurrency(parseFloat(med.price))}</td>
+                <td>${med.expirationDate}</td>
+                <td>${med.category}</td>
+                <td>${med.isExpired ? 'Oui' : 'Non'}</td>
+                <td>${med.isLowStock ? 'Oui' : 'Non'}</td>
+                <td>
+                    ${!med.isExpired ? `<button onclick="showMedicationForm(${index})">Modifier</button>` : ''}
+                    <button onclick="deleteMedication(${index})">Supprimer</button>
+                </td>
+            </tr>
+        `).join('');
+    };
 
-const generateMedicationReport = () => {
-    let totalStockValue = 0;
-    let fragment = document.createDocumentFragment();
+    const generateMedicationReport = () => {
+        const medicationListContainer = document.getElementById('medication-list');
+        const totalStockValueCell = document.getElementById('total-stock-value');
 
-    medications.forEach((med) => {
-        const row = document.createElement('tr');
-        row.classList.add('medication-row');
+        let totalStockValue = 0;
+        const reportRows = medications.map(med => {
+            const stockValue = med.quantity * parseFloat(med.price);
+            totalStockValue += stockValue;
 
-        const medicationNameCell = document.createElement('td');
-        medicationNameCell.textContent = med.name;
+            return `
+                <tr>
+                    <td>${med.name}</td>
+                    <td>${med.quantity}</td>
+                    <td>${formatCurrency(parseFloat(med.price))}</td>
+                    <td>${formatCurrency(stockValue)}</td>
+                </tr>
+            `;
+        }).join('');
 
-        const quantityCell = document.createElement('td');
-        quantityCell.textContent = med.quantity;
+        medicationListContainer.innerHTML = reportRows;
+        totalStockValueCell.textContent = formatCurrency(totalStockValue);
+    };
 
-        const priceCell = document.createElement('td');
-        priceCell.textContent = formatCurrency(med.price);
+    const deleteMedication = (index) => {
+        if (confirm("Êtes-vous sûr de vouloir supprimer ce médicament ?")) {
+            medications.splice(index, 1);
+            saveMedications();
+            renderFilteredTable();
+            generateMedicationReport();
+        }
+    };
 
-        const totalValueCell = document.createElement('td');
-        const stockValue = med.quantity * med.price;
-        totalValueCell.textContent = formatCurrency(stockValue);
+    const setupEventListeners = () => {
+        elements.addMedicationBtn.addEventListener("click", () => showMedicationForm());
+        
+        elements.medicationForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            
+            const medication = {
+                name: document.getElementById("med-name").value,
+                quantity: document.getElementById("med-quantity").value,
+                price: document.getElementById("med-price").value,
+                expirationDate: document.getElementById("med-expiration").value,
+                category: document.getElementById("med-category").value
+            };
 
-        row.appendChild(medicationNameCell);
-        row.appendChild(quantityCell);
-        row.appendChild(priceCell);
-        row.appendChild(totalValueCell);
+            if (Object.values(medication).some(val => !val)) {
+                alert("Tous les champs sont obligatoires !");
+                return;
+            }
 
-        fragment.appendChild(row);
-        totalStockValue += stockValue;
-    });
+            addMedication(medication);
+        });
 
-    medicationListContainer.innerHTML = '';
-    medicationListContainer.appendChild(fragment);
-    totalStockValueCell.textContent = formatCurrency(totalStockValue);
-};
+        [
+            elements.searchBar,
+            elements.categoryFilter,
+            elements.expiredFilter,
+            elements.lowStockFilter
+        ].forEach(element => {
+            element.addEventListener(
+                element.type === 'checkbox' ? 'change' : 'input', 
+                renderFilteredTable
+            );
+        });
+    };
 
-document.getElementById("add-medication").addEventListener("click", () => showMedicationForm());
-medicationForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const name = document.getElementById("med-name").value;
-    const quantity = document.getElementById("med-quantity").value;
-    const price = document.getElementById("med-price").value;
-    const expirationDate = document.getElementById("med-expiration").value;
-    const category = document.getElementById("med-category").value;
+    const initializeApp = () => {
+        loadMedications();
+        setupEventListeners();
+        renderFilteredTable();
+        generateMedicationReport();
+    };
 
-    if (!name || !quantity || !price || !expirationDate || !category) {
-        alert("Tous les champs sont obligatoires !");
-        return;
-    }
+    window.showMedicationForm = showMedicationForm;
+    window.deleteMedication = deleteMedication;
 
-    const medication = { name, quantity, price, expirationDate, category };
-    addMedication(medication);
+    initializeApp();
 });
-
-searchBar.addEventListener("input", () => {
-    renderFilteredTable();
-});
-categoryFilter.addEventListener("change", renderFilteredTable);
-expiredFilter.addEventListener("change", renderFilteredTable);
-lowStockFilter.addEventListener("change", renderFilteredTable);
-
-// Initialisation de l'affichage
-renderFilteredTable();
-generateMedicationReport();
