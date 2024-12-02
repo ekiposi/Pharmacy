@@ -104,10 +104,11 @@
                 // Add total period last line
                 const totalRow = document.createElement('tr');
                 const totalPrice = salesHistory.reduce((acc, sale) => (sale.price * sale.quantity)+ acc, 0)
-
                 totalRow.innerHTML = `
-                    <td>Total</td>
+                <tr>
+                    <td colspan='5'><strong>Total</strong></td>
                     <td>${totalPrice.toFixed(2)}</td>
+                </tr>
                 `
                 salesTableBody.appendChild(totalRow)
 

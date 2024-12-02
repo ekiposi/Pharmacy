@@ -307,3 +307,7 @@ footer {
   justify-content: center;
   margin: 30px 0;
 }  
+
+#expired-medications-table tbody tr:last-child, #sales-report-table tbody tr:last-child {
+  background-color: transparent;
+}
